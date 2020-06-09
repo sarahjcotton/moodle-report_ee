@@ -30,14 +30,13 @@ $id = optional_param('id', '', PARAM_INT);
 $courseid = optional_param('course', '', PARAM_INT);
 $course = ($id ? $id : $courseid);
 
-//$course = $DB->get_record('course', array('id' => $id), '*', MUST_EXIST);
-
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url('/report/ee/index.php', array('id'=>$course));
 $PAGE->set_pagelayout('report');
 $PAGE->set_title(get_string('pluginname', 'report_ee'));
 
 require_login($course);
+$this->page->requires->js_call_amd('report_ee/submit', 'init', array());
 
 // Check permissions.
 $coursecontext = context_course::instance($course);
@@ -47,104 +46,26 @@ $PAGE->set_heading(get_string('pluginname', 'report_ee'));
 
 echo $OUTPUT->header();
 
-$mform = new externalexaminerform(null, array('course' => $course));
+$data = get_report_data($course);
+$setdata = process_data($data);
+
+if((has_capability('report/ee:view', $coursecontext) && $setdata->locked != 0) && !is_siteadmin()){
+  $locked = $setdata->locked;
+}else{
+  $locked = 0;
+}
+
+$mform = new externalexaminerform(null, array('course' => $course, 'locked'=>$locked));
 if ($mform->is_cancelled()) {
     //Handle form cancel operation, if cancel button is present on form
     /// redirect to course page
     redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 } else if ($formdata = $mform->get_data()) {
   $saved = save_form_data($formdata);
-
-// } else {
-//   // this branch is executed if the form is submitted but the data doesn't validate and the form should be redisplayed
-//   // or on the first display of the form.
-//
-//     // set the data from the database
-//
-//     // check if there is data
-//     $isdata = $DB->record_exists('report_ee', ['assignid' => $course]);
-//
-//     if(!$isdata) {
-//         $toform = '';
-//     } else {
-//         $assigns = get_assignments($course);
-//         $assigns = json_decode(json_encode($assigns), true);
-//         // print_r($assigns);
-//
-//
-//         $assignids = '';
-//         foreach($assigns as $assign) {
-//             $assignids .= $assign['id'] . ',';
-//         }
-//         // print_r($assignids);
-//
-//         $formvalues = getformvalues($assignids);
-// $toform = new stdClass;
-//
-//         $formvals = json_decode(json_encode($formvalues), true);
-//         foreach ($formvals as $formval) {
-//
-//             $formassign = $formval['assignid'];
-// if (isset($formval['criteriona'])) {
-//             $formassign .= '_a';
-//
-//                     // foreach ($formval['assignid'] as $formassign) {
-//                     // print('xxx');
-//                     // print($formassign);
-//                     $toform->$formassign = $formval['criteriona'];
-//                 }
-//
-//                 if (isset($formval['criterionb'])) {
-//                     $formassign = $formval['assignid'];
-//             $formassign .= '_b';
-//
-//                     // foreach ($formval['assignid'] as $formassign) {
-//                     // print('xxx');
-//                     // print($formassign);
-//                     $toform->$formassign = $formval['criterionb'];
-//                 }
-//
-//                                 if (isset($formval['criterionc'])) {
-//                     $formassign = $formval['assignid'];
-//             $formassign .= '_c';
-//
-//                     // foreach ($formval['assignid'] as $formassign) {
-//                     // print('xxx');
-//                     // print($formassign);
-//                     $toform->$formassign = $formval['criterionc'];
-//                 }
-//
-//
-//                     // }
-//             //             if(isset($formval['criteriona'])) {
-//             //     $toform->$formval['assignid'] = $formval['criteriona'];
-//             // }
-//
-//
-//
-//
-//             // print_r($formval['id']);
-//                         if(isset($formval['userid'])) {
-//                 $toform->userid = $formval['userid'];
-//             }
-//             if(isset($formval['locked'])) {
-//                 $toform->formlock = $formval['locked'];
-//             }
-//             $toform->comments = $formval['comments'];
-//
-//          // print_r($formval);
-//         }
-//
-//
-//         // print_r($toform);
-//
-//         // $toform = '';
-//
-//     }
-//
-//     $mform->set_data($toform);
-//
-//   //displays the form
+  redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('saved', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
+
+$mform->set_data($setdata);
 $mform->display();
+
 echo $OUTPUT->footer();

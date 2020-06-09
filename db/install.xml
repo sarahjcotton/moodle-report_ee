@@ -9,6 +9,7 @@
         <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user ID of the externalexaminer"/>
         <FIELD NAME="comments" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="externalexaminer comments if the assignments don't mexternalexaminert standards"/>
         <FIELD NAME="locked" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The timestamp of the lock form event. If null, the form is not locked"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The timestamp the form was first edited"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The timestamp of the last modification event"/>
       </FIELDS>
       <KEYS>

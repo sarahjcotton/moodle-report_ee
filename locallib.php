@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, sexternalexaminer <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Form for external examines to review assignments
@@ -61,65 +61,128 @@ function getformvalues($assignids) {
 }
 
 function save_form_data($formdata){
-  var_dump($formdata);die();
-  // if (isset($formdata['formlock'])) {
-  //     $locked = 1;
-  // } else {
-  //     $locked = 0;
-  // }
+  global $DB, $USER;
+  $course = $formdata->course;
+  // Check to see if record exists in ee table for course .
+  $reportrecord =   $DB->get_record('report_ee',(['course'=>$course]), '*');
+  if(!$reportrecord){
+    $record = new stdClass();
+    $record->course = $course;
+    $record->comments = $formdata->comments;
+    if($formdata->locked == 1){
+      $date = new DateTime("now", core_date::get_user_timezone_object());
+      $record->locked = $date->getTimestamp();
+    }else{
+      $record->locked = $formdata->locked;
+    }
+    $date = new DateTime("now", core_date::get_user_timezone_object());
+    $record->timecreated = $date->getTimestamp();
+    $record = $DB->insert_record('report_ee', $record, true);
+  }
 
-  // $results = array();
-  // $ids = array();
-  // $recordstosave = array();
-  //
-  // // TODO get the date/time it was locked
-  // // $locked = 0;
-  //
-  // foreach ($formdata as $key => $val) {
-  //   // get the unique ids if they are numeric
-  //     $ids[] .= strtok($key, '_');
-  //     $ids = array_unique($ids);
-  // }
-  //
-  // foreach ($ids as $id => $idval) {
-  //     if (!is_numeric($idval)) {
-  //         unset($ids[$id]);
-  //     }
-  // }
-  //
-  // $recordstosave = array();
-  //
-  // foreach ($ids as $key => $value) {
-  //     foreach($formdata as $form => $data) {
-  //         $criterion = substr($form, -1);
-  //         $recordstosave[strtok($form, '_')][$criterion] = $data;
-  //     }
-  // }
-  //
-  // foreach($recordstosave as $k=>$v) {
-  //     $date = new DateTime("now", core_date::get_user_timezone_object());
-  //     $date->setTime(0, 0, 0);
-  //
-  //     $saveclass =new stdClass();
-  //     if(is_numeric($k)) {
-  //       $saveclass->userid = $USER->id;
-  //       $saveclass->assignid = $k;
-  //       $saveclass->sample = $v['sample'];
-  //       //$saveclass->criterionb = $v['b'];
-  //     //  $saveclass->criterionc = $v['c'];
-  //       $saveclass->comments = $recordstosave['comments']['s'];
-  //       $saveclass->locked = $locked;
-  //       $saveclass->timemodified = $date->getTimestamp();
-  //
-  //       $update = $DB->record_exists('report_ee', ['assignid' => $saveclass->assignid]);
-  //
-  //       // if the record does not exist, insert it
-  //       if(!$update) {
-  //           $saveclassid = $DB->insert_record('report_ee', $saveclass, true);
-  //       } else {
-  //           $saveclass->id = get_rowid($saveclass->assignid);
-  //           $saveclassid = $DB->update_record('report_ee', $saveclass, true);
-  //       }
-  //   }
-  // }
+  // If form record exists, get id and add assignments to ee_assign table (add record to assign table for easy joining)
+  $record = new stdClass();
+  $record->report = $reportrecord->id;
+  $record->user = $USER->id;
+
+  $record2 = new stdClass();
+  $record2->id = $reportrecord->id;
+
+  foreach($formdata as $data=>$d){
+    $arr = explode("_", $data);
+    if($arr[0] == 'assign'){ // If this is an assignment value
+      $record->assign = $arr[1]; // Get the assign ID
+      // Get the assign id and the value
+      if($arr[1] == $record->assign){
+        if($arr[2] == 'sample'){
+          $record->sample = $d;
+        }elseif($arr[2] == 'level'){
+          $record->level = $d;
+        }elseif($arr[2] == 'national'){ // When we get here we need to process the record
+          $record->national = $d;
+          $assignrecord =  $DB->get_record('report_ee_assign',(['report'=>$reportrecord->id, 'assign'=>$record->assign]), '*');
+          if(!$assignrecord){
+            $DB->insert_record('report_ee_assign', $record, true);
+          }else{
+            $record->id = $assignrecord->id;
+            $DB->update_record('report_ee_assign', $record, false);
+          }
+        }
+      }
+      $assign = $arr[1];
+    }else{
+      if($data == 'comments'){
+        $record2->comments = $d;
+      }elseif ($data == 'locked') {
+        if($d == 1){
+          $date = new DateTime("now", core_date::get_user_timezone_object());
+          $record2->locked = $date->getTimestamp();
+        }else{
+          $record2->locked = $d;
+        }
+      }
+    }
+  }
+  $date = new DateTime("now", core_date::get_user_timezone_object());
+  $record2->timemodified = $date->getTimestamp();
+  $DB->update_record('report_ee', $record2, false);
+}
+
+function get_report_data($course){
+  global $DB;
+  $sql = "SELECT a.*, r.course, r.comments, CONCAT(u.firstname, ' ', u.lastname) username, r.locked, r.timecreated, r.timemodified -- , a.user, a.assign, a.sample, a.level, a.national
+          FROM {report_ee} r
+          JOIN {report_ee_assign} a ON a.report = r.id
+          JOIN {user} u ON u.id = a.user
+          WHERE r.course = ?";
+  $data = $DB->get_records_sql($sql, array($course));
+
+  return $data;
+}
+
+function process_data($data){
+  $assign = 0;
+  $username = null;
+  $setdata = new stdClass();
+
+  foreach($data as $key=>$val){
+    foreach($val as $k=>$v){
+      if($k === 'assign'){
+        $assign = $v;
+      }
+      if($k == 'sample'){
+        $sample = 'assign_'. $assign .'_sample';
+        $setdata->{$sample} = $v;
+      }
+      if($k == 'level'){
+        $level = 'assign_'. $assign .'_level';
+        $setdata->{$level} = $v;
+      }
+      if($k == 'national'){
+        $national = 'assign_'. $assign .'_national';
+        $setdata->{$national} = $v;
+      }
+      if($k == 'comments'){
+        $setdata->comments = $v;
+      }
+      if($k == 'username'){
+        $username = $v;
+      }
+      if($k == 'locked'){
+        if($v == 0){
+          $setdata->locked = $v;
+        }else{
+          $setdata->locked = 1;
+          $date = new DateTime();
+          $date->setTimestamp(intval($v));
+          $date = userdate($date->getTimestamp());
+
+
+          $setdata->lockedby = $username . ' on ' . $date;
+        }
+      }
+    }
+  }
+
+  return($setdata);
 }
