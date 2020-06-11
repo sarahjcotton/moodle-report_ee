@@ -35,68 +35,71 @@ class externalexaminerform extends moodleform{
         global $USER, $DB, $CFG, $OUTPUT;
         $mform = $this->_form;
 
-        // get the assignments
+        // Get the assignments
         $assignments = get_assignments($this->_customdata['course']);
-        $coursefullname = get_coursefullname($this->_customdata['course']);
+        $coursefullname = get_course_fullname($this->_customdata['course']);
         $locked = $this->_customdata['locked'];
+        $edit = $this->_customdata['edit'];
+        $admin = $this->_customdata['admin'];
 
         foreach($assignments as $assign) {
-       // IMPORTANT: add validation and type rules as per documentation
-            // Add the assignment name
-            $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
-            // Samples select
-            $sampleid = 'assign_' . $assign->id.'_sample';
-            $mform->addElement('select', $sampleid, get_string('sample', 'report_ee') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
-            $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
-            if($locked != 0){
-              $mform->disabledIf($sampleid, 'locked', 'checked');
-            }
-
-            $levelid = 'assign_' . $assign->id.'_level';
-            $mform->addElement('select', $levelid, get_string('level', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
-            $mform->addHelpButton($levelid, 'helpsample', 'report_ee');
-            if($locked != 0){
-              $mform->disabledIf($levelid, 'locked', 'checked');
-            }
-
-            $nationalid = 'assign_' . $assign->id.'_national';
-            $mform->addElement('select', $nationalid, get_string('national', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
-            $mform->addHelpButton($nationalid, 'helpsample', 'report_ee');
-            if($locked != 0){
-                $mform->disabledIf($nationalid, 'locked', 'checked');
-            }
+          // Add the assignment elements
+          $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
+          // Samples select
+          $sampleid = 'assign_' . $assign->id.'_sample';
+          $mform->addElement('select', $sampleid, get_string('sample', 'report_ee') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
+          $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
+          if($locked != 0 || $edit == false){
+            $mform->hardFreeze($sampleid);
+          }
+          // Level select
+          $levelid = 'assign_' . $assign->id.'_level';
+          $mform->addElement('select', $levelid, get_string('level', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
+          $mform->addHelpButton($levelid, 'helplevel', 'report_ee');
+          if($locked != 0 || $edit == false){
+            $mform->hardFreeze($levelid);
+          }
+          // National select
+          $nationalid = 'assign_' . $assign->id.'_national';
+          $mform->addElement('select', $nationalid, get_string('national', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
+          $mform->addHelpButton($nationalid, 'helpnational', 'report_ee');
+          if($locked != 0 || $edit == false){
+              $mform->hardFreeze($nationalid);
+          }
         }
 
-        // Add comments section
+        // Comments text area
         $mform->addElement('textarea', 'comments', get_string('comments', 'report_ee'), 'wrap="virtual" rows="20" cols="50"');
-        $mform->addElement('advcheckbox', 'locked', get_string('lock', 'report_ee'), null);
-        if($locked != 0){
+        if($locked != 0 || $edit == false){
           $mform->disabledIf('comments', 'locked', 'checked');
+          $mform->hardFreeze('comments');
         }
-        // TODO check if all the assignments have been evaluated
+        // Locked checkbox
+        $mform->addElement('advcheckbox', 'locked', get_string('lock', 'report_ee'), null);
         $mform->addHelpButton('locked', 'helplock', 'report_ee');
-        if($locked != 0){
+        // Only allow EEs to lock the form. Only allow Student registry to unlock the form
+        if(($locked != 0 && $admin == false)){
           $mform->hardFreeze('locked');
         }
+        if($edit == false && $admin == false || $locked == 0 && $admin == true){
+          $mform->hardFreeze('locked');
+        }
+        // Locked warning populated via jQuery onclick of 'locked'
+        $mform->addElement('html', '<div class="lockedwarning">');
+        $mform->addElement('html', '</div><br>');
 
         $mform->addElement('hidden', 'course', $this->_customdata['course']);
         $mform->setType('course', PARAM_INT);
-        // $mform->addElement('hidden', 'preventedit', $locked);
-        // $mform->setType('preventedit', PARAM_INT);
-
+        // Locked by info populated via setdata()
         if($locked != 0){
           $mform->addElement('static', 'lockedby', get_string('lockedby', 'report_ee'));
-          //$this->add_action_buttons($cancel = true, $submitlabel=null);
         }
         $this->add_action_buttons();
-        // else{
-        //   $this->add_action_buttons();
-        // }
     }
 
     public function validation($data, $files) {
   			$errors = parent::validation($data, $files);
-
+        // On final submit (locked) check all fields have been populated
         if($data['locked'] == 1){
           foreach($data as $k=>$v){
             if((strpos($k, 'assign') === 0) && ($v == 0)){
@@ -109,24 +112,5 @@ class externalexaminerform extends moodleform{
         }
 
         return $errors;
-    }
-}
-
-class confirmform extends moodleform{
-    /**
-     * Defines forms elements
-     */
-    public function definition() {
-      $mform = $this->_form;
-      $mform->addElement('html', '<h4> Confirm form</h4>');
-      $mform->addElement('html', '<p>Are you sure you want to submit this form? No further changes will be able to be made.</p>');
-      //$mform->addElement('advcheckbox', 'locked', get_string('lock', 'report_ee'), null);
-
-      $mform->addElement('hidden', 'course', $this->_customdata['formdata']->course);
-      $mform->setType('course', PARAM_INT);
-
-      print_object($this->_customdata);
-
-      $this->add_action_buttons();
     }
 }

@@ -8,32 +8,28 @@
  /**
   * @module theme_solent2017/border
   */
-define(['jquery', 'report_ee/submit'], function($) {
+define(['jquery', 'core/str', 'core/notification', 'report_ee/submit'], function($, str, notification) {
 
     return {
-        init: function() {
-
-            function locked_selected() {
-
-                var nav_height = $(".navbar").height();
-                var $window = $(window);
-                var window_top_position = $window.scrollTop();
-                var header = $("header[role='banner']").attr('class');
-
-                if(window_top_position >= nav_height){
-                    $(header).addClass("nav-border");
-                    $("header[role='banner']").addClass("nav-border");
-                }else{
-                    $(header).addClass("nav-border");
-                    $("header[role='banner']").removeClass("nav-border");
-                }
+        init: function(admin) {
+          $("input[name='locked']").click(function(){
+            var lockedValue = $("input[name='locked']:checked").val();
+            if(lockedValue == 1){
+              var lockedWarning = str.get_strings([
+                  {key: 'lockedwarning', component: 'report_ee'},
+              ]);
+              $.when(lockedWarning).done(function() {
+                   $('.lockedwarning').text(M.util.get_string('lockedwarning', 'report_ee'));
+                   $('.lockedwarning').addClass("alert alert-danger");
+              }).fail(notification.exception);
+            }else{
+              $('.lockedwarning').text("");
+              $(".lockedwarning").removeClass("alert alert-danger");
+              if(admin == 1){
+                $( "#id_locked" ).prop( "disabled", true );
+              }
             }
-
-            $(document).ready(function() {
-                var $window = $(window);
-                $window.on('scroll resize', check_if_in_view);
-            });
-
+          });
         }
     };
 });

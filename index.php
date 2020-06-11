@@ -30,18 +30,17 @@ $id = optional_param('id', '', PARAM_INT);
 $courseid = optional_param('course', '', PARAM_INT);
 $course = ($id ? $id : $courseid);
 
-$PAGE->set_context(context_system::instance());
+
 $PAGE->set_url('/report/ee/index.php', array('id'=>$course));
 $PAGE->set_pagelayout('report');
-$PAGE->set_title(get_string('pluginname', 'report_ee'));
 
 require_login($course);
-$this->page->requires->js_call_amd('report_ee/submit', 'init', array());
 
 // Check permissions.
 $coursecontext = context_course::instance($course);
+$PAGE->set_context($coursecontext);
 require_capability('report/ee:view', $coursecontext);
-
+$PAGE->set_title($COURSE->shortname .': '. get_string('pluginname' , 'report_ee'));
 $PAGE->set_heading(get_string('pluginname', 'report_ee'));
 
 echo $OUTPUT->header();
@@ -49,20 +48,35 @@ echo $OUTPUT->header();
 $data = get_report_data($course);
 $setdata = process_data($data);
 
-if((has_capability('report/ee:view', $coursecontext) && $setdata->locked != 0) && !is_siteadmin()){
-  $locked = $setdata->locked;
+if($data){
+  if($setdata->locked != 0){
+    $locked = $setdata->locked;
+  }else{
+    $locked = 0;
+  }
 }else{
   $locked = 0;
 }
 
-$mform = new externalexaminerform(null, array('course' => $course, 'locked'=>$locked));
+if(has_capability('report/ee:admin', $coursecontext)){
+  $admin = true;
+}else{
+  $admin = false;
+}
+if(has_capability('report/ee:edit', $coursecontext)){
+  $edit = true;
+}else{
+  $edit = false;
+}
+$PAGE->requires->js_call_amd('report_ee/submit', 'init', [$admin]);
+
+$mform = new externalexaminerform(null, array('course' => $course, 'locked'=>$locked, 'admin'=>$admin, 'edit'=>$edit));
 if ($mform->is_cancelled()) {
-    //Handle form cancel operation, if cancel button is present on form
-    /// redirect to course page
-    redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
+  redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 } else if ($formdata = $mform->get_data()) {
   $saved = save_form_data($formdata);
   redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('saved', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
+  send_emails();
 }
 
 $mform->set_data($setdata);

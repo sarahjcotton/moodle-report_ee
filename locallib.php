@@ -23,7 +23,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die('Direct access to this script is forbidden.');
-
+// Get all first sitting assignments
 function get_assignments($course){
   global $DB, $USER, $COURSE;
 
@@ -31,34 +31,35 @@ function get_assignments($course){
           FROM {assign} a
           JOIN {course_modules} cm ON cm.instance = a.id
           JOIN {modules} m ON m.id = cm.module AND m.name = "assign"
-          WHERE a.course = ?', array($course));
+          JOIN {local_quercus_tasks_sittings} s ON s.assign = a.id
+          WHERE a.course = ?
+          AND cm.idnumber!= ""
+          AND s.sitting_desc = "FIRST_SITTING"', array($course));
 
   return $assignments;
 }
 
-function get_coursefullname($course){
+
+function get_course_fullname($course){
   global $DB, $USER;
     $coursefullname = $DB->get_field_select("course", "fullname", "id=$course");
-
 
   return $coursefullname;
 }
 
-function get_rowid($assignmentid){
-  global $DB, $USER;
-    $rowid = $DB->get_field_select("report_ee", "id", "assignid=$assignmentid");
+// function get_rowid($assignmentid){
+//   global $DB, $USER;
+//     $rowid = $DB->get_field_select("report_ee", "id", "assignid=$assignmentid");
+//
+//   return $rowid;
+// }
 
-
-  return $rowid;
-}
-
-function getformvalues($assignids) {
-  global $DB, $USER;
-
-  $records = $DB->get_records_sql ( "SELECT * FROM {report_ee} WHERE assignid IN (" . rtrim ( $assignids, ',' ) . ")" );
-
-  return $records;
-}
+// function getformvalues($assignids) {
+//   global $DB, $USER;
+//   $records = $DB->get_records_sql ( "SELECT * FROM {report_ee} WHERE assignid IN (" . rtrim ( $assignids, ',' ) . ")" );
+//
+//   return $records;
+// }
 
 function save_form_data($formdata){
   global $DB, $USER;
@@ -91,8 +92,8 @@ function save_form_data($formdata){
   foreach($formdata as $data=>$d){
     $arr = explode("_", $data);
     if($arr[0] == 'assign'){ // If this is an assignment value
-      $record->assign = $arr[1]; // Get the assign ID
-      // Get the assign id and the value
+      $record->assign = $arr[1];
+      // Get the assign id and  value
       if($arr[1] == $record->assign){
         if($arr[2] == 'sample'){
           $record->sample = $d;
@@ -130,16 +131,20 @@ function save_form_data($formdata){
 
 function get_report_data($course){
   global $DB;
-  $sql = "SELECT a.*, r.course, r.comments, CONCAT(u.firstname, ' ', u.lastname) username, r.locked, r.timecreated, r.timemodified -- , a.user, a.assign, a.sample, a.level, a.national
+  $sql = "SELECT a.*, r.course, c.shortname, c.fullname, r.comments,
+          CONCAT(u.firstname, ' ', u.lastname) username, r.locked,
+          r.timecreated, r.timemodified
           FROM {report_ee} r
           JOIN {report_ee_assign} a ON a.report = r.id
           JOIN {user} u ON u.id = a.user
+          JOIN {course} c ON c.id = r.course
           WHERE r.course = ?";
   $data = $DB->get_records_sql($sql, array($course));
 
   return $data;
 }
 
+// Get existing data to populate the form
 function process_data($data){
   $assign = 0;
   $username = null;
@@ -177,7 +182,6 @@ function process_data($data){
           $date->setTimestamp(intval($v));
           $date = userdate($date->getTimestamp());
 
-
           $setdata->lockedby = $username . ' on ' . $date;
         }
       }
@@ -185,4 +189,8 @@ function process_data($data){
   }
 
   return($setdata);
+}
+
+function send_emails(){
+
 }
