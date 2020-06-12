@@ -98,7 +98,7 @@ class externalexaminerform extends moodleform{
         }
         $this->add_action_buttons();
       }else{
-        $mform->addElement('html', '<p>There are no assessments in this module.</p>');
+        $mform->addElement('html', '<p>' . get_string('noassessments', 'report_ee', get_config('report_ee', 'studentregemail')) . '</p>');
         $mform->addElement('cancel');
       }
     }

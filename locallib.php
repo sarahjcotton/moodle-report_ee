@@ -167,7 +167,7 @@ function process_data($data){
           $date->setTimestamp(intval($v));
           $date = userdate($date->getTimestamp());
 
-          $setdata->lockedby = $username . ' on ' . $date;
+          $setdata->lockedby = get_string('lockedbydata', 'report_ee', ['username'=>$username, 'date'=>$date]);
         }
       }
     }
@@ -225,7 +225,7 @@ function send_emails($formdata){
               $subject = '';
               break;
           case 2:
-              $assignmessage .= '<p style="color: red;font-weight: bold;">' . ucfirst($arr[2]) . " - No </p>";
+              $assignmessage .= '<p style="font-family: OpenSans, "Trebuchet MS";color:red;font-weight: bold;">' . ucfirst($arr[2]) . " - No </p>";
               $actionrequired = get_string('actionrequired', 'report_ee');
               break;
       }
