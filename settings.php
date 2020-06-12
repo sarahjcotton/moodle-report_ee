@@ -28,5 +28,3 @@ $settings = new admin_settingpage('report_ee', new lang_string('pluginname', 're
 $settings->add(new admin_setting_configtext('report_ee/studentregemail', get_string('studentregemail', 'report_ee'), '', ''));
 $settings->add(new admin_setting_configtext('report_ee/moduleleadershortname', get_string('moduleleadershortname', 'report_ee'), '', ''));
 $settings->add(new admin_setting_configtext('report_ee/externalexaminershortname', get_string('externalexaminershortname', 'report_ee'), '', ''));
-
-$ADMIN->add('reports', $settings);

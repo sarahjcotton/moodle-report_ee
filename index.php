@@ -45,6 +45,13 @@ $PAGE->set_heading(get_string('pluginname', 'report_ee'));
 
 echo $OUTPUT->header();
 
+// Trigger a report viewed event.
+$event = \report_ee\event\report_viewed::create(array(
+            'context' =>  $coursecontext,
+            'userid' => $USER->id,
+          ));
+$event->trigger();
+
 $data = get_report_data($course);
 $setdata = process_data($data);
 
@@ -77,6 +84,26 @@ if ($mform->is_cancelled()) {
   save_form_data($formdata);
   if($formdata->locked !=0){
     send_emails($formdata, $data);
+    // Trigger a report submitted event.
+    $event = \report_ee\event\report_submitted::create(array(
+                'context' =>  $coursecontext,
+                'userid' => $USER->id,
+              ));
+    $event->trigger();
+  }elseif($formdata->locked < $setdata->locked){
+    // Trigger a report submitted event.
+    $event = \report_ee\event\report_unlocked::create(array(
+                'context' =>  $coursecontext,
+                'userid' => $USER->id,
+              ));
+    $event->trigger();
+  }else{
+    // Trigger a report submitted event.
+    $event = \report_ee\event\report_updated::create(array(
+                'context' =>  $coursecontext,
+                'userid' => $USER->id,
+              ));
+    $event->trigger();
   }
   redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('saved', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
