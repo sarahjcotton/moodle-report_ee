@@ -64,7 +64,7 @@ function save_form_data($formdata){
     }
     $date = new DateTime("now", core_date::get_user_timezone_object());
     $record->timecreated = $date->getTimestamp();
-    $record = $DB->insert_record('report_ee', $record, true);
+    $reportrecord = $DB->insert_record('report_ee', $record, true);
   }
 
   // If form record exists, get id and add assignments to ee_assign table (add record to assign table for easy joining)
@@ -216,16 +216,16 @@ function send_emails($formdata){
       if($arr[1] !== $assign){
         // Get assign name
         $assignment = $DB->get_record('assign', array('id'=>$arr[1]));
-        $assignmessage .= "Assignment - " . $assignment->name . "\r\n\n";
+        $assignmessage .= "<h4>Assignment - " . $assignment->name . "</h4>";
       }
 
       switch ($d) {
           case 1:
-              $assignmessage .= ucfirst($arr[2]) . " - Yes\r\n\n";
+              $assignmessage .= "<p>" . ucfirst($arr[2]) . " - Yes</p>";
               $subject = '';
               break;
           case 2:
-              $assignmessage .= '<span class="standard-not-met">' . ucfirst($arr[2]) . " - No </span>\r\n\n";
+              $assignmessage .= '<p style="color: red;font-weight: bold;">' . ucfirst($arr[2]) . " - No </p>";
               $actionrequired = get_string('actionrequired', 'report_ee');
               break;
       }
@@ -234,19 +234,18 @@ function send_emails($formdata){
     }
   }
 
-  $to = get_module_leader_emails()->emailto;
+  $to = get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
 	$subject = $actionrequired . get_string('subject', 'report_ee', $COURSE->shortname);
 	$headers = "From: " . $CFG->noreplyaddress . "\r\n";
   $headers .= "MIME-Version: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
   $externalexaminer = get_external_examiner()->name;
-  $messagebody = get_string('externalname', 'report_ee', $externalexaminer) . "\r\n\n";
+  $messagebody = "<p>" . get_string('externalname', 'report_ee', $externalexaminer) . "</p>";
   $submittedby = $USER->firstname . " " . $USER->lastname;
-  $messagebody .= get_string('submittedby', 'report_ee', $submittedby) . "\r\n\n";
+  $messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
   $messagebody .= $assignmessage;
-  $messagebody .= "Comments:\r\n\n" . $formdata->comments . "\r\n\n";
+  $messagebody .= "<h4>" ."Comments:</h4><p>" . $formdata->comments . "</p>";
   $url = new moodle_url('/report/ee/index.php', array('id'=>$COURSE->id));
-  $messagebody .= "<a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a>";
+  $messagebody .= "<p><a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a></p>";
   mail($to, $subject, $messagebody, $headers);
-	//var_dump($to, $headers, $subject, $messagebody);die();
-	}
+}
