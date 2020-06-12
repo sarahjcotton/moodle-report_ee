@@ -1,3 +1,8 @@
 .lockedwarning{
   text-align: center;
 }
+
+.standard-not-met{
+  colour: red;
+  font-weight: bold;
+}

@@ -34,9 +34,11 @@ class externalexaminerform extends moodleform{
     public function definition() {
         global $USER, $DB, $CFG, $OUTPUT;
         $mform = $this->_form;
-
+        $mform->addElement('hidden', 'course', $this->_customdata['course']);
+        $mform->setType('course', PARAM_INT);
         // Get the assignments
         $assignments = get_assignments($this->_customdata['course']);
+        if($assignments){
         $coursefullname = get_course_fullname($this->_customdata['course']);
         $locked = $this->_customdata['locked'];
         $edit = $this->_customdata['edit'];
@@ -95,6 +97,10 @@ class externalexaminerform extends moodleform{
           $mform->addElement('static', 'lockedby', get_string('lockedby', 'report_ee'));
         }
         $this->add_action_buttons();
+      }else{
+        $mform->addElement('html', '<p>There are no assessments in this module.</p>');
+        $mform->addElement('cancel');
+      }
     }
 
     public function validation($data, $files) {

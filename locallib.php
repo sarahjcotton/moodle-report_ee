@@ -27,7 +27,7 @@ defined('MOODLE_INTERNAL') || die('Direct access to this script is forbidden.');
 function get_assignments($course){
   global $DB, $USER, $COURSE;
 
-  $assignments = $DB->get_records_sql(' SELECT a.id, a.name, cm.idnumber
+  $assignments = $DB->get_records_sql('SELECT a.id, a.name, cm.idnumber
           FROM {assign} a
           JOIN {course_modules} cm ON cm.instance = a.id
           JOIN {modules} m ON m.id = cm.module AND m.name = "assign"
@@ -46,20 +46,6 @@ function get_course_fullname($course){
 
   return $coursefullname;
 }
-
-// function get_rowid($assignmentid){
-//   global $DB, $USER;
-//     $rowid = $DB->get_field_select("report_ee", "id", "assignid=$assignmentid");
-//
-//   return $rowid;
-// }
-
-// function getformvalues($assignids) {
-//   global $DB, $USER;
-//   $records = $DB->get_records_sql ( "SELECT * FROM {report_ee} WHERE assignid IN (" . rtrim ( $assignids, ',' ) . ")" );
-//
-//   return $records;
-// }
 
 function save_form_data($formdata){
   global $DB, $USER;
@@ -131,13 +117,12 @@ function save_form_data($formdata){
 
 function get_report_data($course){
   global $DB;
-  $sql = "SELECT a.*, r.course, c.shortname, c.fullname, r.comments,
+  $sql = "SELECT a.*, r.course, r.comments,
           CONCAT(u.firstname, ' ', u.lastname) username, r.locked,
           r.timecreated, r.timemodified
           FROM {report_ee} r
           JOIN {report_ee_assign} a ON a.report = r.id
           JOIN {user} u ON u.id = a.user
-          JOIN {course} c ON c.id = r.course
           WHERE r.course = ?";
   $data = $DB->get_records_sql($sql, array($course));
 
@@ -191,6 +176,77 @@ function process_data($data){
   return($setdata);
 }
 
-function send_emails(){
-
+function get_module_leader_emails(){
+  global $DB, $COURSE;
+  $moduleleaders = $DB->get_record_sql("SELECT GROUP_CONCAT(u.email SEPARATOR ',') emailto
+                                        FROM {user} u
+                                        INNER JOIN {role_assignments} ra ON ra.userid = u.id
+                                        INNER JOIN {context} ct ON ct.id = ra.contextid
+                                        INNER JOIN {course} c ON c.id = ct.instanceid
+                                        INNER JOIN {role} r ON r.id = ra.roleid
+                                        WHERE r.shortname = ?
+                                        AND c.id = ?",
+                                        array(get_config('report_ee', 'moduleleadershortname'), $COURSE->id));
+  return $moduleleaders;
 }
+
+function get_external_examiner(){
+  global $DB, $COURSE;
+  $externalexaminer = $DB->get_record_sql("SELECT CONCAT(u.firstname, ' ', u.lastname) name
+                                        FROM {user} u
+                                        INNER JOIN {role_assignments} ra ON ra.userid = u.id
+                                        INNER JOIN {context} ct ON ct.id = ra.contextid
+                                        INNER JOIN {course} c ON c.id = ct.instanceid
+                                        INNER JOIN {role} r ON r.id = ra.roleid
+                                        WHERE r.shortname = ?
+                                        AND c.id = ?",
+                                        array(get_config('report_ee', 'externalexaminershortname'), $COURSE->id));
+    return $externalexaminer;
+}
+
+function send_emails($formdata){
+  global $DB, $COURSE, $USER, $CFG;
+  $assign = 0;
+  $assignmessage = "";
+  $actionrequired = "";
+
+  foreach($formdata as $data=>$d){
+    $arr = explode("_", $data);
+    if($arr[0] == 'assign'){ // If this is an assignment value
+      if($arr[1] !== $assign){
+        // Get assign name
+        $assignment = $DB->get_record('assign', array('id'=>$arr[1]));
+        $assignmessage .= "Assignment - " . $assignment->name . "\r\n\n";
+      }
+
+      switch ($d) {
+          case 1:
+              $assignmessage .= ucfirst($arr[2]) . " - Yes\r\n\n";
+              $subject = '';
+              break;
+          case 2:
+              $assignmessage .= '<span class="standard-not-met">' . ucfirst($arr[2]) . " - No </span>\r\n\n";
+              $actionrequired = get_string('actionrequired', 'report_ee');
+              break;
+      }
+
+      $assign = $arr[1];
+    }
+  }
+
+  $to = get_module_leader_emails()->emailto;
+	$subject = $actionrequired . get_string('subject', 'report_ee', $COURSE->shortname);
+	$headers = "From: " . $CFG->noreplyaddress . "\r\n";
+  $headers .= "MIME-Version: 1.0\r\n";
+	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+  $externalexaminer = get_external_examiner()->name;
+  $messagebody = get_string('externalname', 'report_ee', $externalexaminer) . "\r\n\n";
+  $submittedby = $USER->firstname . " " . $USER->lastname;
+  $messagebody .= get_string('submittedby', 'report_ee', $submittedby) . "\r\n\n";
+  $messagebody .= $assignmessage;
+  $messagebody .= "Comments:\r\n\n" . $formdata->comments . "\r\n\n";
+  $url = new moodle_url('/report/ee/index.php', array('id'=>$COURSE->id));
+  $messagebody .= "<a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a>";
+  mail($to, $subject, $messagebody, $headers);
+	//var_dump($to, $headers, $subject, $messagebody);die();
+	}

@@ -23,6 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['actionrequired']='Action required: ';
 $string['c1'] = ' Samples seen';
 $string['cancel'] = 'Changes have been cancelled, redirecting to course page';
 $string['comments'] = 'Comments:';
@@ -34,6 +35,7 @@ $string['ee:edit'] = "Edit EE form";
 $string['ee:view'] = "View EE form";
 $string['errcomment']='You must enter a comment.';
 $string['errselect']='You must select either Yes or No.';
+$string['externalname'] = 'External examiner: {$a}';
 $string['formtitle'] = 'External examiner form for {$a}';
 $string['helpsample'] = 'samples of work';
 $string['helpsample_help'] = 'Have you seen samples of completed work for this assessment?';
@@ -46,13 +48,15 @@ $string['helpnational_help'] = 'Were the standards of student performance compar
 $string['level'] = 'Level';
 $string['lock'] = 'I have completed this form wish to submit it.';
 $string['lockedby'] = 'Locked by';
-$string['lockedwarning'] = 'Are you sure you have finished filling in the form? Ticking this box will lock the formprevent further editing.';
+$string['lockedwarning'] = 'Are you sure you have finished filling in the form? Ticking this box will lock the form and prevent further editing.';
+$string['moduleleadershortname'] = 'Module leader role shortname';
 $string['national'] = 'National';
 $string['plugintitle'] = 'External examiner feedback';
 $string['pluginname'] = 'External examiner feedback';
 $string['qtitle'] = "Questions";
+$string['reportlink'] = 'Link to report';
 $string['samplesseen'] = 'Samples seen';
 $string['saved'] = 'Your changes have been saved, redirecting to course page';
-$string['submit_label'] = 'Submit';
-$string['submitconfirm'] = "Are you sure? Submitting will lock the form and you will be unable to edit comments.";
-$string['unlock'] = 'Unlock';
+$string['subject'] = 'EE moderation for {$a}';
+$string['submittedby'] = 'Submitted by: {$a}';
+$string['studentregemail'] = 'Student registry email';

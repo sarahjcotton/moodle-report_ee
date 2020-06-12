@@ -15,7 +15,7 @@
 // along with Moodle.  If not, sexternalexaminer <http://www.gnu.org/licenses/>.
 
 /**
- * Form for external examines to review assignments
+ * Form for external examiners to review assignments
  *
  * @package    report_ee
  * @copyright  2020 onwards Solent University
@@ -74,9 +74,11 @@ $mform = new externalexaminerform(null, array('course' => $course, 'locked'=>$lo
 if ($mform->is_cancelled()) {
   redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 } else if ($formdata = $mform->get_data()) {
-  $saved = save_form_data($formdata);
+  save_form_data($formdata);
+  if($formdata->locked !=0){
+    send_emails($formdata, $data);
+  }
   redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('saved', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
-  send_emails();
 }
 
 $mform->set_data($setdata);
