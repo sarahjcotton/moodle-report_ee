@@ -20,6 +20,7 @@
     <TABLE NAME="report_ee_assign" COMMENT="Stores data for externalexaminer reviews of modules">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="report" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The report ID of the externalexaminer"/>
         <FIELD NAME="user" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user ID of the externalexaminer"/>
         <FIELD NAME="assign" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The assignment ID"/>
         <FIELD NAME="sample" TYPE="int" LENGTH="4" NOTNULL="false" SEQUENCE="false" COMMENT="The status of the selection for Criterion A"/>
@@ -30,6 +31,7 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="user" TYPE= "foreign" FIELDS="user" REFTABLE="user" REFFIELDS="id"/>
         <KEY NAME="assign" TYPE="foreign" FIELDS="assign" REFTABLE="assign" REFFIELDS="id"/>
+        <KEY NAME="report" TYPE="foreign" FIELDS="report" REFTABLE="report_ee" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

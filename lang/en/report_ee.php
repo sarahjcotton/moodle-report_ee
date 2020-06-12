@@ -36,6 +36,7 @@ $string['ee:view'] = "View EE form";
 $string['errcomment']='You must enter a comment.';
 $string['errselect']='You must select either Yes or No.';
 $string['externalname'] = 'External examiner: {$a}';
+$string['externalexaminershortname'] = 'External examiner role shortname';
 $string['formtitle'] = 'External examiner form for {$a}';
 $string['helpsample'] = 'samples of work';
 $string['helpsample_help'] = 'Have you seen samples of completed work for this assessment?';
