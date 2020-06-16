@@ -204,11 +204,29 @@ function get_external_examiner(){
     return $externalexaminer;
 }
 
+function get_label_string($string){
+  switch ($string) {
+    case 'sample':
+        $string = get_string('sample', 'report_ee');
+        return $string;
+    case 'level':
+        $string = get_string('level', 'report_ee');
+        return $string;
+    case 'national':
+        $string = get_string('national', 'report_ee');
+        return $string;
+    default:
+        return "";
+  }
+
+}
+
 function send_emails($formdata){
   global $DB, $COURSE, $USER, $CFG;
   $assign = 0;
   $assignmessage = "";
   $actionrequired = "";
+  $to = get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
 
   foreach($formdata as $data=>$d){
     $arr = explode("_", $data);
@@ -221,12 +239,13 @@ function send_emails($formdata){
 
       switch ($d) {
           case 1:
-              $assignmessage .= "<p>" . ucfirst($arr[2]) . " - Yes</p>";
+              $assignmessage .= "<p>" . get_label_string($arr[2]) . " - Yes</p>";
               $subject = '';
               break;
           case 2:
-              $assignmessage .= '<p style="font-family: OpenSans, "Trebuchet MS";color:red;font-weight: bold;">' . ucfirst($arr[2]) . " - No </p>";
+              $assignmessage .= '<p style="color:red;font-weight:bold;">' . get_label_string($arr[2]) . " - No </p>";
               $actionrequired = get_string('actionrequired', 'report_ee');
+              $to .= ',' . get_config('report_ee', 'qualityemail');
               break;
       }
 
@@ -234,7 +253,6 @@ function send_emails($formdata){
     }
   }
 
-  $to = get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
 	$subject = $actionrequired . get_string('subject', 'report_ee', $COURSE->shortname);
 	$headers = "From: " . $CFG->noreplyaddress . "\r\n";
   $headers .= "MIME-Version: 1.0\r\n";

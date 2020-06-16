@@ -49,21 +49,21 @@ class externalexaminerform extends moodleform{
           $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
           // Samples select
           $sampleid = 'assign_' . $assign->id.'_sample';
-          $mform->addElement('select', $sampleid, get_string('sample', 'report_ee') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
+          $mform->addElement('select', $sampleid, get_label_string('sample') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
           $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
           if($locked != 0 || $edit == false){
             $mform->hardFreeze($sampleid);
           }
           // Level select
           $levelid = 'assign_' . $assign->id.'_level';
-          $mform->addElement('select', $levelid, get_string('level', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
+          $mform->addElement('select', $levelid, get_label_string('level'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
           $mform->addHelpButton($levelid, 'helplevel', 'report_ee');
           if($locked != 0 || $edit == false){
             $mform->hardFreeze($levelid);
           }
           // National select
           $nationalid = 'assign_' . $assign->id.'_national';
-          $mform->addElement('select', $nationalid, get_string('national', 'report_ee'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
+          $mform->addElement('select', $nationalid, get_label_string('national'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
           $mform->addHelpButton($nationalid, 'helpnational', 'report_ee');
           if($locked != 0 || $edit == false){
               $mform->hardFreeze($nationalid);
@@ -96,7 +96,13 @@ class externalexaminerform extends moodleform{
         if($locked != 0){
           $mform->addElement('static', 'lockedby', get_string('lockedby', 'report_ee'));
         }
-        $this->add_action_buttons();
+
+        if(($locked != 0 && $admin == false)){
+          $buttonarray=array();
+          $mform->addElement('cancel');
+        }else{
+          $this->add_action_buttons();
+        }
       }else{
         $mform->addElement('html', '<p>' . get_string('noassessments', 'report_ee', get_config('report_ee', 'studentregemail')) . '</p>');
         $mform->addElement('cancel');
