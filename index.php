@@ -30,7 +30,6 @@ $id = optional_param('id', '', PARAM_INT);
 $courseid = optional_param('course', '', PARAM_INT);
 $course = ($id ? $id : $courseid);
 
-
 $PAGE->set_url('/report/ee/index.php', array('id'=>$course));
 $PAGE->set_pagelayout('report');
 

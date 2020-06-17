@@ -227,6 +227,7 @@ function send_emails($formdata){
   $assignmessage = "";
   $actionrequired = "";
   $to = get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
+  $negativeoutcometext = "";
 
   foreach($formdata as $data=>$d){
     $arr = explode("_", $data);
@@ -246,6 +247,7 @@ function send_emails($formdata){
               $assignmessage .= '<p style="color:red;font-weight:bold;">' . get_label_string($arr[2]) . " - No </p>";
               $actionrequired = get_string('actionrequired', 'report_ee');
               $to .= ',' . get_config('report_ee', 'qualityemail');
+              $negativeoutcometext = '<p style="font-weight:bold;">' . get_string('negativeoutcometext', 'report_ee') . "</p>";
               break;
       }
 
@@ -263,6 +265,7 @@ function send_emails($formdata){
   $messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
   $messagebody .= $assignmessage;
   $messagebody .= "<h4>" ."Comments:</h4><p>" . $formdata->comments . "</p>";
+  $messagebody .= "<p>" . $negativeoutcometext . "</p>";
   $url = new moodle_url('/report/ee/index.php', array('id'=>$COURSE->id));
   $messagebody .= "<p><a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a></p>";
   mail($to, $subject, $messagebody, $headers);
