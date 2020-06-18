@@ -65,15 +65,17 @@ function save_form_data($formdata){
     $date = new DateTime("now", core_date::get_user_timezone_object());
     $record->timecreated = $date->getTimestamp();
     $reportrecord = $DB->insert_record('report_ee', $record, true);
+  }else{
+    $reportrecord = $reportrecord->id;
   }
 
   // If form record exists, get id and add assignments to ee_assign table (add record to assign table for easy joining)
   $record = new stdClass();
-  $record->report = $reportrecord->id;
+  $record->report = $reportrecord;
   $record->user = $USER->id;
 
   $record2 = new stdClass();
-  $record2->id = $reportrecord->id;
+  $record2->id = $reportrecord;
 
   foreach($formdata as $data=>$d){
     $arr = explode("_", $data);
