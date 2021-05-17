@@ -256,19 +256,29 @@ function send_emails($formdata){
       $assign = $arr[1];
     }
   }
+  
+	$startdate = new DateTime();
+	$startdate->setTimestamp($COURSE->startdate);
+	$startdate = userdate($startdate->getTimestamp(), '%d/%m/%Y');
+	
+	$enddate = new DateTime();
+	$enddate->setTimestamp($COURSE->enddate);
+	$enddate = userdate($enddate->getTimestamp(), '%d/%m/%Y');
 
-	$subject = $actionrequired . get_string('subject', 'report_ee', $COURSE->shortname);
+	$shortname = substr($COURSE->shortname, 0, strpos($COURSE->shortname, "_"));
+
+	$subject = $actionrequired . get_string('subject', 'report_ee', $shortname) . " " . $startdate . " - " . $enddate;
 	$headers = "From: " . $CFG->noreplyaddress . "\r\n";
-  $headers .= "MIME-Version: 1.0\r\n";
+	$headers .= "MIME-Version: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-  $externalexaminer = get_external_examiner()->name;
-  $messagebody = "<p>" . get_string('externalname', 'report_ee', $externalexaminer) . "</p>";
-  $submittedby = $USER->firstname . " " . $USER->lastname;
-  $messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
-  $messagebody .= $assignmessage;
-  $messagebody .= "<h4>" ."Comments:</h4><p>" . $formdata->comments . "</p>";
-  $messagebody .= "<p>" . $negativeoutcometext . "</p>";
-  $url = new moodle_url('/report/ee/index.php', array('id'=>$COURSE->id));
-  $messagebody .= "<p><a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a></p>";
-  mail($to, $subject, $messagebody, $headers);
+	$externalexaminer = get_external_examiner()->name;
+	$messagebody = "<p>" . get_string('externalname', 'report_ee', $externalexaminer) . "</p>";
+	$submittedby = $USER->firstname . " " . $USER->lastname;
+	$messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
+	$messagebody .= $assignmessage;
+	$messagebody .= "<h4>" ."Comments:</h4><p>" . $formdata->comments . "</p>";
+	$messagebody .= "<p>" . $negativeoutcometext . "</p>";
+	$url = new moodle_url('/report/ee/index.php', array('id'=>$COURSE->id));
+	$messagebody .= "<p><a href='". $url . "'>" . get_string('reportlink', 'report_ee'). "</a></p>";
+	mail($to, $subject, $messagebody, $headers);
 }
