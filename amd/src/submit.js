@@ -1,12 +1,12 @@
 // Standard license block omitted.
 /*
- * @package    block_overview
- * @copyright  2015 Someone cool
+ * @package    report_ee
+ * @copyright  2020 Solent Univeristy
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
  /**
-  * @module theme_solent2017/border
+  * @module report/ee
   */
 define(['jquery', 'core/str', 'core/notification', 'report_ee/submit'], function($, str, notification) {
 
