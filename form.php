@@ -37,9 +37,9 @@ class externalexaminerform extends moodleform{
         $mform->addElement('hidden', 'course', $this->_customdata['course']);
         $mform->setType('course', PARAM_INT);
         // Get the assignments
-        $assignments = get_assignments($this->_customdata['course']);
+        $assignments = report_ee_get_assignments($this->_customdata['course']);
         if($assignments){
-        $coursefullname = get_course_fullname($this->_customdata['course']);
+        $coursefullname = report_ee_get_course_fullname($this->_customdata['course']);
         $locked = $this->_customdata['locked'];
         $edit = $this->_customdata['edit'];
         $admin = $this->_customdata['admin'];
@@ -49,21 +49,21 @@ class externalexaminerform extends moodleform{
           $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
           // Samples select
           $sampleid = 'assign_' . $assign->id.'_sample';
-          $mform->addElement('select', $sampleid, get_label_string('sample') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
+          $mform->addElement('select', $sampleid, report_ee_get_label_string('sample') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
           $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
           if($locked != 0 || $edit == false){
             $mform->hardFreeze($sampleid);
           }
           // Level select
           $levelid = 'assign_' . $assign->id.'_level';
-          $mform->addElement('select', $levelid, get_label_string('level'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
+          $mform->addElement('select', $levelid, report_ee_get_label_string('level'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
           $mform->addHelpButton($levelid, 'helplevel', 'report_ee');
           if($locked != 0 || $edit == false){
             $mform->hardFreeze($levelid);
           }
           // National select
           $nationalid = 'assign_' . $assign->id.'_national';
-          $mform->addElement('select', $nationalid, get_label_string('national'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
+          $mform->addElement('select', $nationalid, report_ee_get_label_string('national'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
           $mform->addHelpButton($nationalid, 'helpnational', 'report_ee');
           if($locked != 0 || $edit == false){
               $mform->hardFreeze($nationalid);

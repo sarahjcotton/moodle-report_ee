@@ -51,8 +51,8 @@ $event = \report_ee\event\report_viewed::create(array(
           ));
 $event->trigger();
 
-$data = get_report_data($course);
-$setdata = process_data($data);
+$data = report_ee_get_report_data($course);
+$setdata = report_ee_process_data($data);
 
 if($data){
   if($setdata->locked != 0){
@@ -80,9 +80,9 @@ $mform = new externalexaminerform(null, array('course' => $course, 'locked'=>$lo
 if ($mform->is_cancelled()) {
   redirect($CFG->wwwroot.'/course/view.php?id=' . $course, get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 } else if ($formdata = $mform->get_data()) {
-  save_form_data($formdata);
+  report_ee_save_form_data($formdata);
   if($formdata->locked !=0){
-    send_emails($formdata, $data);
+    report_ee_send_emails($formdata, $data);
     // Trigger a report submitted event.
     $event = \report_ee\event\report_submitted::create(array(
                 'context' =>  $coursecontext,

@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die('Direct access to this script is forbidden.');
 // Get all first sitting assignments
-function get_assignments($course){
+function report_ee_get_assignments($course){
   global $DB, $USER, $COURSE;
 
   $assignments = $DB->get_records_sql('SELECT a.id, a.name, cm.idnumber
@@ -40,18 +40,18 @@ function get_assignments($course){
 }
 
 
-function get_course_fullname($course){
+function report_ee_get_course_fullname($course){
   global $DB, $USER;
     $coursefullname = $DB->get_field_select("course", "fullname", "id=$course");
 
   return $coursefullname;
 }
 
-function save_form_data($formdata){
+function report_ee_save_form_data($formdata){
   global $DB, $USER;
   $course = $formdata->course;
   // Check to see if record exists in ee table for course .
-  $reportrecord =   $DB->get_record('report_ee',(['course'=>$course]), '*');
+  $reportrecord =   $DB->get_record('report_ee',['course'=>$course], '*');
   if(!$reportrecord){
     $record = new stdClass();
     $record->course = $course;
@@ -117,7 +117,7 @@ function save_form_data($formdata){
   $DB->update_record('report_ee', $record2, false);
 }
 
-function get_report_data($course){
+function report_ee_get_report_data($course){
   global $DB;
   $sql = "SELECT a.*, r.course, r.comments,
           CONCAT(u.firstname, ' ', u.lastname) username, r.locked,
@@ -132,7 +132,7 @@ function get_report_data($course){
 }
 
 // Get existing data to populate the form
-function process_data($data){
+function report_ee_process_data($data){
   $assign = 0;
   $username = null;
   $setdata = new stdClass();
@@ -178,7 +178,7 @@ function process_data($data){
   return($setdata);
 }
 
-function get_module_leader_emails(){
+function report_ee_get_module_leader_emails(){
   global $DB, $COURSE;
   $moduleleaders = $DB->get_record_sql("SELECT GROUP_CONCAT(u.email SEPARATOR ',') emailto
                                         FROM {user} u
@@ -192,7 +192,7 @@ function get_module_leader_emails(){
   return $moduleleaders;
 }
 
-function get_external_examiner(){
+function report_ee_get_external_examiner(){
   global $DB, $COURSE;
   $externalexaminer = $DB->get_record_sql("SELECT CONCAT(u.firstname, ' ', u.lastname) name
                                         FROM {user} u
@@ -206,7 +206,7 @@ function get_external_examiner(){
     return $externalexaminer;
 }
 
-function get_label_string($string){
+function report_ee_get_label_string($string){
   switch ($string) {
     case 'sample':
         $string = get_string('sample', 'report_ee');
@@ -223,12 +223,12 @@ function get_label_string($string){
 
 }
 
-function send_emails($formdata){
+function report_ee_send_emails($formdata){
   global $DB, $COURSE, $USER, $CFG;
   $assign = 0;
   $assignmessage = "";
   $actionrequired = "";
-  $to = get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
+  $to = report_ee_get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
   $negativeoutcometext = "";
 
   foreach($formdata as $data=>$d){
@@ -242,11 +242,11 @@ function send_emails($formdata){
 
       switch ($d) {
           case 1:
-              $assignmessage .= "<p>" . get_label_string($arr[2]) . " - Yes</p>";
+              $assignmessage .= "<p>" . report_ee_get_label_string($arr[2]) . " - Yes</p>";
               $subject = '';
               break;
           case 2:
-              $assignmessage .= '<p style="color:red;font-weight:bold;">' . get_label_string($arr[2]) . " - No </p>";
+              $assignmessage .= '<p style="color:red;font-weight:bold;">' . report_ee_get_label_string($arr[2]) . " - No </p>";
               $actionrequired = get_string('actionrequired', 'report_ee');
               $to .= ',' . get_config('report_ee', 'qualityemail');
               $negativeoutcometext = '<p style="font-weight:bold;">' . get_string('negativeoutcometext', 'report_ee') . "</p>";
@@ -271,7 +271,7 @@ function send_emails($formdata){
 	$headers = "From: " . $CFG->noreplyaddress . "\r\n";
 	$headers .= "MIME-Version: 1.0\r\n";
 	$headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-	$externalexaminer = get_external_examiner()->name;
+	$externalexaminer = report_ee_get_external_examiner()->name;
 	$messagebody = "<p>" . get_string('externalname', 'report_ee', $externalexaminer) . "</p>";
 	$submittedby = $USER->firstname . " " . $USER->lastname;
 	$messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
