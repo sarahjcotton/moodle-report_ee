@@ -52,8 +52,7 @@ function report_ee_get_assignments($course) {
  */
 function report_ee_get_course_fullname($course) {
     global $DB;
-    // Not safe SQL.
-    $coursefullname = $DB->get_field_select("course", "fullname", "id=$course");
+    $coursefullname = $DB->get_field("course", "fullname", ['id' => $course]);
     return $coursefullname;
 }
 
