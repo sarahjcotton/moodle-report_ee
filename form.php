@@ -1,7 +1,7 @@
 <?php
 // This file is part of Moodle - http://moodle.org/
 //
-// free: you can redistribute it and/or modify
+// Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
@@ -12,22 +12,25 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, sexternalexaminer <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Form for external examines to review assignments
  *
- * @package    report_ee
- * @copyright  2020 onwards Solent University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   report_ee
+ * @author    Mark Sharp <mark.sharp@solent.ac.uk>
+ * @copyright 2022 Solent University {@link https://www.solent.ac.uk}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 
 require_once("$CFG->libdir/formslib.php");
 require_once('locallib.php');
 /**
  * EE form
  */
-class externalexaminerform extends moodleform{
+class externalexaminerform extends moodleform {
     /**
      * Defines forms elements
      */
@@ -36,93 +39,110 @@ class externalexaminerform extends moodleform{
         $mform = $this->_form;
         $mform->addElement('hidden', 'course', $this->_customdata['course']);
         $mform->setType('course', PARAM_INT);
-        // Get the assignments
+        // Get the assignments.
         $assignments = report_ee_get_assignments($this->_customdata['course']);
-        if($assignments){
-        $coursefullname = report_ee_get_course_fullname($this->_customdata['course']);
-        $locked = $this->_customdata['locked'];
-        $edit = $this->_customdata['edit'];
-        $admin = $this->_customdata['admin'];
+        if ($assignments) {
+            $coursefullname = report_ee_get_course_fullname($this->_customdata['course']);
+            $locked = $this->_customdata['locked'];
+            $edit = $this->_customdata['edit'];
+            $admin = $this->_customdata['admin'];
 
-        foreach($assignments as $assign) {
-          // Add the assignment elements
-          $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
-          // Samples select
-          $sampleid = 'assign_' . $assign->id.'_sample';
-          $mform->addElement('select', $sampleid, report_ee_get_label_string('sample') , array('Select', 'Yes', 'No'), $attributes='class="dropdown sample" name="sample"');
-          $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
-          if($locked != 0 || $edit == false){
-            $mform->hardFreeze($sampleid);
-          }
-          // Level select
-          $levelid = 'assign_' . $assign->id.'_level';
-          $mform->addElement('select', $levelid, report_ee_get_label_string('level'), array('Select', 'Yes', 'No'), $attributes='class="dropdown" name="level"');
-          $mform->addHelpButton($levelid, 'helplevel', 'report_ee');
-          if($locked != 0 || $edit == false){
-            $mform->hardFreeze($levelid);
-          }
-          // National select
-          $nationalid = 'assign_' . $assign->id.'_national';
-          $mform->addElement('select', $nationalid, report_ee_get_label_string('national'), array('Select', 'Yes', 'No'), $attributes='class="dropdowns"');
-          $mform->addHelpButton($nationalid, 'helpnational', 'report_ee');
-          if($locked != 0 || $edit == false){
-              $mform->hardFreeze($nationalid);
-          }
-        }
+            foreach ($assignments as $assign) {
+                // Add the assignment elements.
+                $mform->addElement('html', '<h4>' . $assign->name. '</h4>');
+                // Samples select.
+                $sampleid = 'assign_' . $assign->id.'_sample';
+                $mform->addElement('select', $sampleid,
+                    report_ee_get_label_string('sample'),
+                    array('Select', 'Yes', 'No'),
+                    'class="dropdown sample" name="sample"');
+                $mform->addHelpButton($sampleid, 'helpsample', 'report_ee');
+                if ($locked != 0 || $edit == false) {
+                    $mform->hardFreeze($sampleid);
+                }
+                // Level select.
+                $levelid = 'assign_' . $assign->id.'_level';
+                $mform->addElement('select', $levelid,
+                    report_ee_get_label_string('level'),
+                    array('Select', 'Yes', 'No'),
+                    'class="dropdown" name="level"');
+                $mform->addHelpButton($levelid, 'helplevel', 'report_ee');
+                if ($locked != 0 || $edit == false) {
+                    $mform->hardFreeze($levelid);
+                }
+                // National select.
+                $nationalid = 'assign_' . $assign->id.'_national';
+                $mform->addElement('select', $nationalid,
+                    report_ee_get_label_string('national'),
+                    array('Select', 'Yes', 'No'),
+                    'class="dropdowns"');
+                $mform->addHelpButton($nationalid, 'helpnational', 'report_ee');
+                if ($locked != 0 || $edit == false) {
+                    $mform->hardFreeze($nationalid);
+                }
+            }
 
-        // Comments text area
-        $mform->addElement('textarea', 'comments', get_string('comments', 'report_ee'), 'wrap="virtual" rows="20" cols="50"');
-        if($locked != 0 || $edit == false){
-          $mform->disabledIf('comments', 'locked', 'checked');
-          $mform->hardFreeze('comments');
-        }
-        // Locked checkbox
-        $mform->addElement('advcheckbox', 'locked', get_string('lock', 'report_ee'), null);
-        $mform->addHelpButton('locked', 'helplock', 'report_ee');
-        // Only allow EEs to lock the form. Only allow Student registry to unlock the form
-        if(($locked != 0 && $admin == false)){
-          $mform->hardFreeze('locked');
-        }
-        if($edit == false && $admin == false || $locked == 0 && $admin == true){
-          $mform->hardFreeze('locked');
-        }
-        // Locked warning populated via jQuery onclick of 'locked'
-        $mform->addElement('html', '<div class="lockedwarning">');
-        $mform->addElement('html', '</div><br>');
+            // Comments text area.
+            $mform->addElement('textarea', 'comments',
+                get_string('comments', 'report_ee'), 'wrap="virtual" rows="20" cols="50"');
+            if ($locked != 0 || $edit == false) {
+                $mform->disabledIf('comments', 'locked', 'checked');
+                $mform->hardFreeze('comments');
+            }
+            // Locked checkbox.
+            $mform->addElement('advcheckbox', 'locked', get_string('lock', 'report_ee'), null);
+            $mform->addHelpButton('locked', 'helplock', 'report_ee');
+            // Only allow EEs to lock the form. Only allow Student registry to unlock the form.
+            if (($locked != 0 && $admin == false)) {
+                $mform->hardFreeze('locked');
+            }
+            if ($edit == false && $admin == false || $locked == 0 && $admin == true) {
+                $mform->hardFreeze('locked');
+            }
+            // Locked warning populated via jQuery onclick of 'locked'.
+            $mform->addElement('html', '<div class="lockedwarning">');
+            $mform->addElement('html', '</div><br>');
 
-        $mform->addElement('hidden', 'course', $this->_customdata['course']);
-        $mform->setType('course', PARAM_INT);
-        // Locked by info populated via setdata()
-        if($locked != 0){
-          $mform->addElement('static', 'lockedby', get_string('lockedby', 'report_ee'));
-        }
+            $mform->addElement('hidden', 'course', $this->_customdata['course']);
+            $mform->setType('course', PARAM_INT);
+            // Locked by info populated via setdata().
+            if ($locked != 0) {
+                $mform->addElement('static', 'lockedby', get_string('lockedby', 'report_ee'));
+            }
 
-        if(($locked != 0 && $admin == false)){
-          $buttonarray=array();
-          $mform->addElement('cancel');
-        }else{
-          $this->add_action_buttons();
+            if (($locked != 0 && $admin == false)) {
+                $mform->addElement('cancel');
+            } else {
+                $this->add_action_buttons();
+            }
+        } else {
+            $mform->addElement('html', '<p>' .
+                get_string('noassessments', 'report_ee',
+                get_config('report_ee', 'studentregemail')) . '</p>');
+            $mform->addElement('cancel');
         }
-      }else{
-        $mform->addElement('html', '<p>' . get_string('noassessments', 'report_ee', get_config('report_ee', 'studentregemail')) . '</p>');
-        $mform->addElement('cancel');
-      }
     }
 
+    /**
+     * Extra validation
+     *
+     * @param array $data Formdata
+     * @param array $files Info about files
+     * @return array Errors
+     */
     public function validation($data, $files) {
-  			$errors = parent::validation($data, $files);
-        // On final submit (locked) check all fields have been populated
-        if($data['locked'] == 1){
-          foreach($data as $k=>$v){
-            if((strpos($k, 'assign') === 0) && ($v == 0)){
-              $errors[$k] = get_string('errselect', 'report_ee');
+        $errors = parent::validation($data, $files);
+        // On final submit (locked) check all fields have been populated.
+        if ($data['locked'] == 1) {
+            foreach ($data as $k => $v) {
+                if ((strpos($k, 'assign') === 0) && ($v == 0)) {
+                    $errors[$k] = get_string('errselect', 'report_ee');
+                }
+                if ($k == 'comments' && $v == "") {
+                    $errors[$k] = get_string('errcomment', 'report_ee');
+                }
             }
-            if($k == 'comments' && $v == ""){
-              $errors[$k] = get_string('errcomment', 'report_ee');
-            }
-    			}
         }
-
         return $errors;
     }
 }

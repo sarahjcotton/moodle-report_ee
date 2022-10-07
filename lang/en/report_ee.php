@@ -1,7 +1,7 @@
 <?php
 // This file is part of Moodle - http://moodle.org/
 //
-// free: you can redistribute it and/or modify
+// Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
@@ -12,25 +12,27 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, sexternalexaminer <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Form for external examines to review assignments
+ * Language strings
  *
- * @package    report
- * @subpackage externalexaminer
- * @copyright  2020 onwards Solent University
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   report_ee
+ * @author    Mark Sharp <mark.sharp@solent.ac.uk>
+ * @copyright 2022 Solent University {@link https://www.solent.ac.uk}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['actionrequired']='Action required: ';
+defined('MOODLE_INTERNAL') || die();
+
+$string['actionrequired'] = 'Action required: ';
 $string['cancel'] = 'Changes cancelled, redirecting to course page';
 $string['comments'] = 'Comments:';
 $string['ee:admin'] = "Unlock EE form";
 $string['ee:edit'] = "Edit EE form";
 $string['ee:view'] = "View EE form";
-$string['errcomment']='You must enter a comment.';
-$string['errselect']='You must select either Yes or No.';
+$string['errcomment'] = 'You must enter a comment.';
+$string['errselect'] = 'You must select either Yes or No.';
 $string['externalname'] = 'External examiner: {$a}';
 $string['externalexaminershortname'] = 'External examiner role shortname';
 $string['formtitle'] = 'External examiner form for {$a}';

@@ -25,7 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2020020312;   // The (date) version of this plugin
-$plugin->requires  = 2017111300; // Moodle 3.4.
+$plugin->version  = 2020020312;
+$plugin->requires  = 2017111300;
 $plugin->component = 'report_ee';
 $plugin->release = '3.9.12 for 3.9+';

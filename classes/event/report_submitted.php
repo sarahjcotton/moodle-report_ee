@@ -24,17 +24,14 @@
 
  namespace report_ee\event;
 
- defined('MOODLE_INTERNAL') || die();
-
- /**
-  * The report_ee report submitted event class.
-  *
-  * @package    report_ee
-  * @since      Moodle 3.6
-  * @copyright  2020 onwards Solent University
-  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-  */
-
+/**
+ * The report_ee report submitted event class.
+ *
+ * @package    report_ee
+ * @since      Moodle 3.6
+ * @copyright  2020 onwards Solent University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class report_submitted extends \core\event\base {
 
     /**
@@ -71,7 +68,6 @@ class report_submitted extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/report/ee/index.php', array('courseid'=>$this->courseid));
+        return new \moodle_url('/report/ee/index.php', array('courseid' => $this->courseid));
     }
-
 }
