@@ -22,10 +22,10 @@ Feature: Unlock feedback
     | registry         | Registry          | manager        |
     And the following "course enrolments" exist:
     | user     | course  | role             |
-    | ml       | module1 | moduleleader     |
-    | ee       | module1 | externalexaminer |
-    | tutor    | module1 | editingteacher   |
-    | student  | module1 | student          |
+    | ml       | Module1 | moduleleader     |
+    | ee       | Module1 | externalexaminer |
+    | tutor    | Module1 | editingteacher   |
+    | student  | Module1 | student          |
     And I log in as "admin"
     And the solent gradescales are setup
     And the following config values are set as admin:

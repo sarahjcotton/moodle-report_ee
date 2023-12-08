@@ -22,10 +22,10 @@ Feature: External examiners give feedback
     | registry         | Registry          | manager        |
     And the following "course enrolments" exist:
     | user     | course  | role             |
-    | ml       | module1 | moduleleader     |
-    | ee       | module1 | externalexaminer |
-    | tutor    | module1 | editingteacher   |
-    | student  | module1 | student          |
+    | ml       | Module1 | moduleleader     |
+    | ee       | Module1 | externalexaminer |
+    | tutor    | Module1 | editingteacher   |
+    | student  | Module1 | student          |
     And I log in as "admin"
     And the solent gradescales are setup
     And the following config values are set as admin:
@@ -149,21 +149,21 @@ Feature: External examiners give feedback
 
   Scenario: Quercus assignments are present
     Given the following Quercus assignment exists:
-    | course                | module1                    |
+    | course                | Module1                    |
     | weighting             | .25                        |
     | assessmentCode        | Report1_2022               |
     | assessmentDescription | Report 1                   |
     | dueDate               | ## 5 May 2023 16:00:00 ##  |
     | academicYear          | 2022                       |
     And the following Quercus assignment exists:
-    | course                | module1                    |
+    | course                | Module1                    |
     | weighting             | .25                        |
     | assessmentCode        | Report2_2022               |
     | assessmentDescription | Report 2                   |
     | dueDate               | ## 6 June 2023 16:00:00 ## |
     | academicYear          | 2022                       |
     And the following Quercus assignment exists:
-    | course                | module1                    |
+    | course                | Module1                    |
     | weighting             | .25                        |
     | assessmentCode        | Report2b_2022              |
     | assessmentDescription | Report 2b                  |
