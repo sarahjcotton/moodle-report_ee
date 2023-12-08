@@ -48,7 +48,7 @@ class report_ee_generator extends component_generator_base {
         $eeassign = new stdClass();
         $eeassign->report = $ee->id;
         if (isset($eefeedback['modifiedby'])) {
-            $eeassign->user = core_user::get_user_by_username('ee')->id;
+            $eeassign->user = core_user::get_user_by_username($eefeedback['modifiedby'])->id;
         } else {
             $eeassign->user = $USER->id;
         }
