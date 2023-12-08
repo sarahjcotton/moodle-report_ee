@@ -71,7 +71,6 @@ Feature: Unlock feedback
     | locked          | 1                                    |
     | modifiedby      | ee                                   |
 
-
   Scenario: EE cannot edit locked feedback
     Given I am on the "Module1" "Course" page logged in as "ee"
     And I navigate to "Reports > External examiner feedback" in current page administration

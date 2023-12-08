@@ -71,7 +71,6 @@ Feature: Teachers can view, but not edit the feedback
     | locked          | 0                                    |
     | modifiedby      | ee                                   |
 
-
   Scenario: Teacher wishes to view the report
     Given I am on the "Module1" "Course" page logged in as "ml"
     When I navigate to "Reports > External examiner feedback" in current page administration
