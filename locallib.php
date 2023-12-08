@@ -23,6 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use report_ee\helper;
+
 /**
  * Get all first sitting assignments.
  *
@@ -38,8 +40,8 @@ function report_ee_get_assignments($course) {
             JOIN {modules} m ON m.id = cm.module AND m.name = "assign"
             JOIN {local_quercus_tasks_sittings} s ON s.assign = a.id
             WHERE a.course = ?
-            AND cm.idnumber!= ""
-            AND s.sitting_desc = "FIRST_SITTING"', array($course));
+            AND cm.idnumber != ""
+            AND s.sitting_desc = "FIRST_SITTING"', [$course]);
 
     return $assignments;
 }
@@ -64,82 +66,78 @@ function report_ee_get_course_fullname($course) {
  */
 function report_ee_save_form_data($formdata) {
     global $DB, $USER;
-    $course = $formdata->course;
+    $date = new DateTime("now", core_date::get_user_timezone_object());
+    $courseid = $formdata->courseid;
     // Check to see if record exists in ee table for course.
-    $reportrecord = $DB->get_record('report_ee', ['course' => $course]);
-    if (!$reportrecord) {
+    $report = $DB->get_record('report_ee', ['course' => $courseid]);
+    if (!$report) {
         $record = new stdClass();
-        $record->course = $course;
+        $record->course = $courseid;
         $record->comments = $formdata->comments;
-        if ($formdata->locked == 1) {
-            $date = new DateTime("now", core_date::get_user_timezone_object());
+        // Timestamp when locked; 1 when being locked now; 0 not locked.
+        $locked = $formdata->locked ?? 0;
+        if ($locked == 1) {
             $record->locked = $date->getTimestamp();
         } else {
-            $record->locked = $formdata->locked;
+            $record->locked = $locked;
         }
-        $date = new DateTime("now", core_date::get_user_timezone_object());
         $record->timecreated = $date->getTimestamp();
-        $reportrecord = $DB->insert_record('report_ee', $record, true);
-    } else {
-        $reportrecord = $reportrecord->id;
+        $id = $DB->insert_record('report_ee', $record);
+        $report = $DB->get_record('report_ee', ['id' => $id]);
     }
+    // Get the assignid as the first field, so we can match below.
+    $assigns = $DB->get_records('report_ee_assign',
+        ['report' => $report->id],
+        '',
+        'assign, id, report, user, sample, level, national'
+    );
 
-    // If form record exists, get id and add assignments to ee_assign table (add record to assign table for easy joining).
-    $record = new stdClass();
-    $record->report = $reportrecord;
-    $record->user = $USER->id;
-
-    $record2 = new stdClass();
-    $record2->id = $reportrecord;
-
-    foreach ($formdata as $data => $d) {
-        $arr = explode("_", $data);
+    foreach ($formdata as $fieldname => $value) {
+        $arr = explode("_", $fieldname);
         if ($arr[0] == 'assign') {
-            $record->assign = $arr[1];
-            // Get the assign id and  value.
-            if ($arr[1] == $record->assign) {
-                if ($arr[2] == 'sample') {
-                    $record->sample = $d;
-                } else if ($arr[2] == 'level') {
-                    $record->level = $d;
-                } else if ($arr[2] == 'national') { // When we get here we need to process the record.
-                    $record->national = $d;
-                    $assignrecord = $DB->get_record('report_ee_assign',
-                        ['report' => $reportrecord->id, 'assign' => $record->assign]);
-                    if (!$assignrecord) {
-                        $DB->insert_record('report_ee_assign', $record, true);
-                    } else {
-                        $record->id = $assignrecord->id;
-                        $DB->update_record('report_ee_assign', $record, false);
-                    }
-                }
+            $assignid = $arr[1];
+            $field = $arr[2];
+            if (!in_array($field, helper::FEEDBACK_TYPES)) {
+                continue;
             }
-            $assign = $arr[1];
-        } else {
-            if ($data == 'comments') {
-                $record2->comments = $d;
-            } else if ($data == 'locked') {
-                if ($d == 1) {
-                    $date = new DateTime("now", core_date::get_user_timezone_object());
-                    $record2->locked = $date->getTimestamp();
-                } else {
-                    $record2->locked = $d;
-                }
+            if (!isset($assigns[$assignid])) {
+                $assigns[$assignid] = new stdClass();
+                $assigns[$assignid]->report = $report->id;
+                $assigns[$assignid]->user = $USER->id;
+                $assigns[$assignid]->assign = $assignid;
+            }
+            $assigns[$assignid]->{$field} = $value;
+        }
+
+        if ($fieldname == 'comments') {
+            $report->comments = $value;
+        }
+        if ($fieldname == 'locked') {
+            if ($value == 1) {
+                $report->locked = $date->getTimestamp();
+            } else {
+                $report->locked = $value;
             }
         }
     }
-    $date = new DateTime("now", core_date::get_user_timezone_object());
-    $record2->timemodified = $date->getTimestamp();
-    $DB->update_record('report_ee', $record2, false);
+    foreach ($assigns as $assign) {
+        if (isset($assign->id)) {
+            $DB->update_record('report_ee_assign', $assign);
+        } else {
+            $DB->insert_record('report_ee_assign', $assign);
+        }
+    }
+    $report->timemodified = $date->getTimestamp();
+    $DB->update_record('report_ee', $report, false);
 }
 
 /**
  * Given courseid, get assignment reports for that course
  *
- * @param int $course courseid
- * @return void
+ * @param int $courseid courseid
+ * @return array
  */
-function report_ee_get_report_data($course) {
+function report_ee_get_report_data($courseid) {
     global $DB;
     $sql = "SELECT a.*, r.course, r.comments,
             CONCAT(u.firstname, ' ', u.lastname) username, r.locked,
@@ -147,23 +145,26 @@ function report_ee_get_report_data($course) {
             FROM {report_ee} r
             JOIN {report_ee_assign} a ON a.report = r.id
             JOIN {user} u ON u.id = a.user
-            WHERE r.course = ?";
-    $data = $DB->get_records_sql($sql, array($course));
-
-    return $data;
+            WHERE r.course = :courseid";
+    return $DB->get_records_sql($sql, ['courseid' => $courseid]);
 }
 
 /**
  * Get existing data to populate the form
  *
  * @param array $data
+ * @param int $courseid
  * @return stdClass Form data
  */
-function report_ee_process_data($data) {
+function report_ee_set_data($data, $courseid) {
     $assign = 0;
     $username = null;
     $setdata = new stdClass();
-
+    // Set this by default.
+    if (!$data) {
+        $setdata = (object)helper::default_form_data($courseid);
+        return $setdata;
+    }
     foreach ($data as $key => $val) {
         foreach ($val as $k => $v) {
             // This does assume assign will always be first. Perhaps use array filters or not even loop.
@@ -219,28 +220,37 @@ function report_ee_get_module_leader_emails() {
                         INNER JOIN {role} r ON r.id = ra.roleid
                         WHERE r.shortname = ?
                         AND c.id = ?",
-                        array(get_config('report_ee', 'moduleleadershortname'), $COURSE->id));
+                        [get_config('report_ee', 'moduleleadershortname'), $COURSE->id]);
     return $moduleleaders;
 }
 
 /**
  * Get the external examiner on current course
  *
+ * @param int $courseid
  * @return stdClass
  */
-function report_ee_get_external_examiner() {
-    global $DB, $COURSE;
+function report_ee_get_external_examiner($courseid) {
+    global $DB;
     // Could there be more than one?
-    $externalexaminer = $DB->get_record_sql("SELECT CONCAT(u.firstname, ' ', u.lastname) name
-                        FROM {user} u
-                        INNER JOIN {role_assignments} ra ON ra.userid = u.id
-                        INNER JOIN {context} ct ON ct.id = ra.contextid
-                        INNER JOIN {course} c ON c.id = ct.instanceid
-                        INNER JOIN {role} r ON r.id = ra.roleid
-                        WHERE r.shortname = ?
-                        AND c.id = ?",
-                        array(get_config('report_ee', 'externalexaminershortname'), $COURSE->id));
-        return $externalexaminer;
+    $shortname = get_config('report_ee', 'externalexaminershortname');
+    if ($shortname == '') {
+        return get_string('unknown', 'report_ee');
+    }
+    $ees = $DB->get_record_sql("
+        SELECT GROUP_CONCAT(CONCAT(u.firstname, ' ', u.lastname) SEPARATOR ', ') name
+        FROM {user} u
+            INNER JOIN {role_assignments} ra ON ra.userid = u.id
+            INNER JOIN {context} ct ON ct.id = ra.contextid
+            INNER JOIN {course} c ON c.id = ct.instanceid
+            INNER JOIN {role} r ON r.id = ra.roleid
+        WHERE r.shortname = :shortname
+            AND c.id = :courseid",
+        ['shortname' => $shortname, 'courseid' => $courseid]);
+    if ($ees) {
+        return $ees->name;
+    }
+    return get_string('unknown', 'report_ee');
 }
 
 /**
@@ -276,59 +286,95 @@ function report_ee_send_emails($formdata) {
     $assign = 0;
     $assignmessage = "";
     $actionrequired = "";
-    $to = report_ee_get_module_leader_emails()->emailto . ',' . get_config('report_ee', 'studentregemail');
-    $negativeoutcometext = "";
+    $subject = '';
+    $to = [];
+    $mls = report_ee_get_module_leader_emails();
+    if ($mls) {
+        $to[] = $mls->emailto;
+    }
+    if ($reg = get_config('report_ee', 'studentregemail')) {
+        $to[] = $reg;
+    }
+    $qa = get_config('report_ee', 'qualityemail');
+    $negativeoutcometext = '';
+    $courseid = $formdata->courseid;
+    $course = get_course($courseid);
 
-    foreach ($formdata as $data => $d) {
-        $arr = explode("_", $data);
+    foreach ($formdata as $fieldname => $value) {
+        $arr = explode("_", $fieldname);
         if ($arr[0] == 'assign') { // If this is an assignment value.
-            if ($arr[1] !== $assign) {
+            $assignid = $arr[1];
+            $field = $arr[2];
+            if (!in_array($field, helper::FEEDBACK_TYPES)) {
+                continue;
+            }
+            if ($assignid !== $assign) {
                 // Get assign name.
-                $assignment = $DB->get_record('assign', array('id' => $arr[1]));
-                $assignmessage .= "<h4>Assignment - " . $assignment->name . "</h4>";
+                $assignment = $DB->get_record('assign', ['id' => $assignid]);
+                $assignmessage .= html_writer::tag(
+                    'h4',
+                    get_string('emailassignmentname', 'report_ee', s($assignment->name)));
             }
 
-            switch ($d) {
+            switch ($value) {
                 case 1:
-                    $assignmessage .= "<p>" . report_ee_get_label_string($arr[2]) . " - Yes</p>";
-                    $subject = '';
+                    $assignmessage .= html_writer::tag(
+                        'p',
+                        get_string($field, 'report_ee') . ' - ' . get_string('yes')
+                    );
                     break;
                 case 2:
-                    $assignmessage .= '<p style="color:red;font-weight:bold;">' .
-                        report_ee_get_label_string($arr[2]) . " - No </p>";
+                    $assignmessage .= html_writer::tag(
+                        'p',
+                        get_string($field, 'report_ee') . ' - ' . get_string('no'),
+                        [
+                            'style' => 'color:red;font-weight:bold;',
+                        ]
+                        );
                     $actionrequired = get_string('actionrequired', 'report_ee');
                     // This is something QA need to know about.
-                    $to .= ',' . get_config('report_ee', 'qualityemail');
-                    $negativeoutcometext = '<p style="font-weight:bold;">' .
-                        get_string('negativeoutcometext', 'report_ee') . "</p>";
+                    $to[] = $qa;
+                    $negativeoutcometext = html_writer::tag(
+                        'p',
+                        get_string('negativeoutcometext', 'report_ee'),
+                        [
+                            'style' => 'font-weight:bold;',
+                        ]
+                    );
                     break;
             }
-            $assign = $arr[1];
         }
     }
 
-    $startdate = new DateTime();
-    $startdate->setTimestamp($COURSE->startdate);
-    $startdate = userdate($startdate->getTimestamp(), '%d/%m/%Y');
+    $startdate = userdate($course->startdate, '%d/%m/%Y');
+    $enddate = userdate($course->enddate, '%d/%m/%Y');
 
-    $enddate = new DateTime();
-    $enddate->setTimestamp($COURSE->enddate);
-    $enddate = userdate($enddate->getTimestamp(), '%d/%m/%Y');
+    // Should this be the full module instance?
+    $shortname = substr($course->shortname, 0, strpos($course->shortname, "_"));
 
-    $shortname = substr($COURSE->shortname, 0, strpos($COURSE->shortname, "_"));
-
-    $subject = $actionrequired . get_string('subject', 'report_ee', $shortname) . " " . $startdate . " - " . $enddate;
+    $subject = $actionrequired .
+        get_string('subject', 'report_ee', [
+            'shortname' => $shortname,
+            'startdate' => $startdate,
+            'enddate' => $enddate,
+        ]);
     $headers = "From: " . $CFG->noreplyaddress . "\r\n";
     $headers .= "MIME-Version: 1.0\r\n";
     $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $externalexaminer = report_ee_get_external_examiner()->name;
-    $messagebody = "<p>" . get_string('externalname', 'report_ee', $externalexaminer) . "</p>";
-    $submittedby = $USER->firstname . " " . $USER->lastname;
-    $messagebody .= "<p>" . get_string('submittedby', 'report_ee', $submittedby) . "</p>";
+    $externalexaminers = report_ee_get_external_examiner($courseid);
+    $messagebody = html_writer::tag('p', get_string('externalname', 'report_ee', $externalexaminers));
+    $submittedby = fullname($USER);
+    $messagebody .= html_writer::tag('p', get_string('submittedby', 'report_ee', $submittedby));
     $messagebody .= $assignmessage;
-    $messagebody .= "<h4>" ."Comments:</h4><p>" . $formdata->comments . "</p>";
-    $messagebody .= "<p>" . $negativeoutcometext . "</p>";
-    $url = new moodle_url('/report/ee/index.php', array('id' => $COURSE->id));
-    $messagebody .= "<p><a href='" . $url . "'>" . get_string('reportlink', 'report_ee'). "</a></p>";
-    mail($to, $subject, $messagebody, $headers);
+    $messagebody .= html_writer::tag('h4', get_string('comments'). ':');
+    $messagebody .= html_writer::tag(
+        'p',
+        format_text_email($formdata->comments, FORMAT_HTML)
+    );
+    $messagebody .= $negativeoutcometext;
+    $url = new moodle_url('/report/ee/index.php', ['courseid' => $courseid]);
+    $messagebody .= html_writer::tag('p',
+        html_writer::link($url, get_string('reportlink', 'report_ee'))
+    );
+    mail(join(',', $to), $subject, $messagebody, $headers);
 }

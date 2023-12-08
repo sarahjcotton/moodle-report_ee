@@ -27,85 +27,88 @@ require('../../config.php');
 require_once('form.php');
 require_once('locallib.php');
 
-$id = optional_param('id', '', PARAM_INT);
-$courseid = optional_param('course', '', PARAM_INT);
-$course = ($id ? $id : $courseid);
+// Some old reports will link with the id param, but using courseid.
+$id = optional_param('id', 0, PARAM_INT);
+if ($id == 0) {
+    $courseid = required_param('courseid', PARAM_INT);
+} else {
+    $courseid = $id;
+}
 
-$PAGE->set_url('/report/ee/index.php', array('id' => $course));
+$course = get_course($courseid);
+
+$PAGE->set_url('/report/ee/index.php', ['courseid' => $courseid]);
 $PAGE->set_pagelayout('report');
 
 require_login($course);
 
 // Check permissions.
-$coursecontext = context_course::instance($course);
+$coursecontext = context_course::instance($courseid);
 $PAGE->set_context($coursecontext);
 require_capability('report/ee:view', $coursecontext);
-$PAGE->set_title($COURSE->shortname .': '. get_string('pluginname' , 'report_ee'));
-$PAGE->set_heading(get_string('pluginname', 'report_ee'));
+$PAGE->set_title($course->shortname .': '. get_string('pluginname' , 'report_ee'));
+$PAGE->set_heading($course->shortname .': '. get_string('pluginname', 'report_ee'));
 
-echo $OUTPUT->header();
+$data = report_ee_get_report_data($courseid);
+$setdata = report_ee_set_data($data, $courseid);
 
-// Trigger a report viewed event.
-$event = \report_ee\event\report_viewed::create(array(
-            'context' => $coursecontext,
-            'userid' => $USER->id,
-          ));
-$event->trigger();
+$locked = $setdata->locked ?? 0;
 
-$data = report_ee_get_report_data($course);
-$setdata = report_ee_process_data($data);
-
-if ($data) {
-    if ($setdata->locked != 0) {
-        $locked = $setdata->locked;
-    } else {
-        $locked = 0;
-    }
-} else {
-    $locked = 0;
-}
-
+$admin = false;
+$edit = false;
 if (has_capability('report/ee:admin', $coursecontext)) {
     $admin = true;
-} else {
-    $admin = false;
 }
 if (has_capability('report/ee:edit', $coursecontext)) {
     $edit = true;
-} else {
-    $edit = false;
 }
-$PAGE->requires->js_call_amd('report_ee/submit', 'init', [$admin]);
 
-$mform = new externalexaminerform(null, array('course' => $course, 'locked' => $locked, 'admin' => $admin, 'edit' => $edit));
+
+// Trigger a report viewed event.
+$event = \report_ee\event\report_viewed::create([
+            'context' => $coursecontext,
+            'userid' => $USER->id,
+          ]);
+$event->trigger();
+
+$mform = new externalexaminerform(null, [
+    'courseid' => $courseid,
+    'locked' => $locked,
+    'admin' => $admin,
+    'edit' => $edit,
+]);
+
 if ($mform->is_cancelled()) {
-    redirect($CFG->wwwroot . '/course/view.php?id=' . $course,
-        get_string('cancel', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
+    redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
 } else if ($formdata = $mform->get_data()) {
+    $formdata->locked = $formdata->locked ?? 0;
     report_ee_save_form_data($formdata);
     if ($formdata->locked != 0) {
-        report_ee_send_emails($formdata, $data);
-        $event = \report_ee\event\report_submitted::create(array(
+        report_ee_send_emails($formdata);
+        $event = \report_ee\event\report_submitted::create([
             'context' => $coursecontext,
             'userid' => $USER->id,
-        ));
+        ]);
         $event->trigger();
-    } else if ($formdata->locked < $setdata->locked) {
-        $event = \report_ee\event\report_unlocked::create(array(
+    } else if ($formdata->locked < $locked) {
+        $event = \report_ee\event\report_unlocked::create([
             'context' => $coursecontext,
             'userid' => $USER->id,
-        ));
+        ]);
         $event->trigger();
     } else {
-        $event = \report_ee\event\report_updated::create(array(
+        $event = \report_ee\event\report_updated::create([
             'context' => $coursecontext,
             'userid' => $USER->id,
-        ));
+        ]);
         $event->trigger();
     }
-    redirect($CFG->wwwroot.'/course/view.php?id=' . $course,
+    redirect($CFG->wwwroot.'/course/view.php?id=' . $courseid,
         get_string('saved', 'report_ee'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
+
+echo $OUTPUT->header();
+$PAGE->requires->js_call_amd('report_ee/submit', 'init', [$admin]);
 
 $mform->set_data($setdata);
 $mform->display();
