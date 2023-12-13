@@ -289,11 +289,15 @@ function report_ee_send_emails($formdata) {
     $subject = '';
     $to = [];
     $mls = report_ee_get_module_leader_emails();
-    if ($mls) {
-        $to[] = $mls->emailto;
+    if (isset($mls->emailto)) {
+        $moduleleaders = explode(',', $mls->emailto);
+        foreach ($moduleleaders as $moduleleader) {
+            $to[$moduleleader] = $moduleleader;
+        }
+
     }
     if ($reg = get_config('report_ee', 'studentregemail')) {
-        $to[] = $reg;
+        $to[$reg] = $reg;
     }
     $qa = get_config('report_ee', 'qualityemail');
     $negativeoutcometext = '';
@@ -333,7 +337,9 @@ function report_ee_send_emails($formdata) {
                         );
                     $actionrequired = get_string('actionrequired', 'report_ee');
                     // This is something QA need to know about.
-                    $to[] = $qa;
+                    if ($qa) {
+                        $to[$qa] = $qa;
+                    }
                     $negativeoutcometext = html_writer::tag(
                         'p',
                         get_string('negativeoutcometext', 'report_ee'),
