@@ -29,7 +29,7 @@ $plugin->version  = 2023120800;
 $plugin->requires  = 2022112800;
 $plugin->component = 'report_ee';
 $plugin->release = '4.1-r1';
-$plugin->dependencies = [
-    'local_solsits' => ANY_VERSION,
-    'local_quercus_tasks' => ANY_VERSION,
-];
+//$plugin->dependencies = [
+//    'local_solsits' => ANY_VERSION,
+//    'local_quercus_tasks' => ANY_VERSION,
+//];

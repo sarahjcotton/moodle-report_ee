@@ -65,18 +65,7 @@ class helper {
             FROM {assign} a
                 JOIN {course_modules} cm ON cm.instance = a.id
                 JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
-                JOIN {local_quercus_tasks_sittings} s ON s.assign = a.id
-            WHERE a.course = :courseid1
-                AND cm.idnumber != ''
-                AND s.sitting_desc = 'FIRST_SITTING'
-            UNION
-            SELECT a.id, a.name, cm.idnumber
-            FROM {assign} a
-                JOIN {course_modules} cm ON cm.instance = a.id
-                JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
-                JOIN {local_solsits_assign} s ON s.sitsref = cm.idnumber
-            WHERE a.course = :courseid2
-                AND s.reattempt = 0", ['courseid1' => $courseid, 'courseid2' => $courseid]);
+            WHERE a.course = :courseid1", ['courseid1' => $courseid]);
 
         return $assignments;
     }

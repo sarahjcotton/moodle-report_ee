@@ -38,10 +38,7 @@ function report_ee_get_assignments($course) {
             FROM {assign} a
             JOIN {course_modules} cm ON cm.instance = a.id
             JOIN {modules} m ON m.id = cm.module AND m.name = "assign"
-            JOIN {local_quercus_tasks_sittings} s ON s.assign = a.id
-            WHERE a.course = ?
-            AND cm.idnumber != ""
-            AND s.sitting_desc = "FIRST_SITTING"', [$course]);
+            WHERE a.course = ?', array($course));
 
     return $assignments;
 }
